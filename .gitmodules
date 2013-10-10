@@ -1,0 +1,3 @@
+[submodule "server/node_modules/node-spotify"]
+	path = server/node_modules/node-spotify
+	url = https://github.com/FrontierPsychiatrist/node-spotify.git
