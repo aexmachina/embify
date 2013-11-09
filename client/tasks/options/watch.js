@@ -2,7 +2,13 @@ var Helpers = require('../helpers');
 
 module.exports = {
   main: {
-    files: ['app/**/*', 'public/**/*', 'vendor/**/*', 'tests/**/*'],
+    files: [
+      'app/**/*',
+      'public/**/*',
+      'vendor/**/*',
+      '!vendor/ember-data/**',
+      'tests/**/*'
+    ],
     tasks: ['build:debug']
   },
   test: {

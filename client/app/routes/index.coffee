@@ -1,5 +1,5 @@
 IndexRoute = Ember.Route.extend
-  model: ->
-    $.getJSON('/a/playlist')
+  redirect: ->
+    @transitionTo 'artist'
 
 `export default IndexRoute`

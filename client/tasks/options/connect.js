@@ -62,16 +62,20 @@ function buildWildcardMiddleware(options) {
 }
 
 function reverseProxy() {
-  var httpProxy = require('http-proxy');
-  var proxy = new httpProxy.RoutingProxy();
-  return function (req, res) {
-    if( req.url.indexOf('/a/') == 0 ) {
+  var httpProxy = require('http-proxy'),
+      proxy = new httpProxy.RoutingProxy(),
+      port = require('../../../server/lib/config').httpPort;
+  return function (req, res, next) {
+    if( req.url.indexOf('/api/') === 0 ) {
       proxy.proxyRequest(req, res, {
         host: 'localhost',
-        port: 8082
+        port: port
       });
     }
-  }
+    else {
+      next();
+    }
+  };
 }
 
 function middleware(connect, options) {

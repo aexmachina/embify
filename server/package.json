@@ -10,6 +10,9 @@
   "author": "",
   "license": "BSD",
   "dependencies": {
-    "spotify-web": "~0.1.3"
+    "spotify-web": "~0.1.3",
+    "express": "~3.4.0",
+    "lodash": "~2.2.1",
+    "spotify-uri": "~0.1.1"
   }
 }
