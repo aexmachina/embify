@@ -5,7 +5,7 @@ class Artist
   constructor: (@data)->
   serialize: (include = {})->
     obj =
-      id: util.id2uri 'artist', @data.id
+      id: @data.link || util.id2uri 'artist', @data.id
       name: @data.name
       popularity: @data.popularity
     if @stars
@@ -17,5 +17,6 @@ class Artist
     if include.disc
       obj.track = @data.number
       obj.disc = @data.disc_number
+    obj
 
 module.exports = Artist

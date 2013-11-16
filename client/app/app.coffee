@@ -9,6 +9,8 @@ App = Ember.Application.extend
   LOG_VIEW_LOOKUPS: true
   modulePrefix: 'appkit'
   Resolver: Resolver
+  ready: ->
+    @debug.globalize() #debug
 
 App.initializer
   name: 'Register Components',

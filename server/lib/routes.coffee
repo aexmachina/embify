@@ -1,92 +1,108 @@
+q = require 'q'
 _ = require 'lodash'
-SpotifyWeb = require 'spotify-web'
 spotifyUri = require 'spotify-uri'
 
 config = require './config'
-spotify = require '../node_modules/node-spotify/build/Debug/spotify'
 Album = require './models/album'
 Artist = require './models/artist'
 
-spotifyWeb = null
-nodeSpotify = null
+class Api
+  init: (@app)->
 
-spotify.login(
-  config.spotify.username, config.spotify.password, 
-  rememberMe = false, withRemembered = false
-)
-spotify.ready ->
-  console.log "node-spotify ready"
-  nodeSpotify = spotify
+    client = require('./dnode/client')
+    client.connect().then (remote)=>
+      @adapter = remote
+      @defineRoutes()
 
-SpotifyWeb.login config.spotify.username, config.spotify.password, (err, spotify)->
-  console.log "spotify-web ready"
-  spotifyWeb = spotify
+  defineRoutes: ->
+    @app.get '/api/playlists', (req, res)=>
+      @adapter.getPlaylists (playlists)->
+        writeJSON createModels('playlist', playlists), res
 
-init = (app)->
-  app.get '/api/playlists', (req, res)->
-    playlists = nodeSpotify.getPlaylists()
-    writeJSON playlists, res
-  app.get '/api/playlists/:id', (req, res)->
-    playlists = nodeSpotify.getPlaylists()
-    if req.params.id == 'starred'
-      playlist = nodeSpotify.getStarred()
-    else
-      playlist = _.findWhere(playlists, id: +req.params.id)
-    if playlist?
-      playlist.tracks = playlist.getTracks()
-      writeJSON playlist, res
-    else
-      notFound res
-  app.get '/api/tracks/starred', (req, res)->
-    writeJSON starred('tracks'), res
-  app.get '/api/albums/starred', (req, res)->
-    writeJSON starred('albums'), res
-  app.get '/api/artists/starred', (req, res)->
-    writeJSON starred('artists'), res
-  # Examples:
-  # ```
-  # /api/artists?starred
-  # /api/albums?starred
-  # /api/tracks?starred
-  # /api/artists?godspeed you black emperor
-  # /api/artists?id=4Z8W4fKeB5YxbusRsdQVPb
-  # /api/artists?id=4Z8W4fKeB5YxbusRsdQVPb,0k17h0D3J5VfsdmQ1iZtE9
-  # ```
-  app.get '/api/:type', (req, res)->
-    type = req.params.type
-    console.log req.query
-    if req.query.starred?
-      results = starred type
-      delete req.query.starred
-      if !_.isEmpty req.query
-        results = _.filter results, req.query
-    else if req.query.id
-      if req.query.id.indexOf(',') != -1
-        ids = req.query.id.split(',')
+    @app.get '/api/playlists/:id', (req, res)=>
+      writePlaylist = (playlist)->
+        if playlist?
+          writeJSON createModel('playlist', playlist), res
+        else
+          notFound res
+      if req.params.id == 'starred'
+        @adapter.getStarred writePlaylist
       else
-        ids = [req.query.id]
-      urls = []
-      for id in ids
-        urls.push spotifyUri.formatURI type: type, id: id
-      spotifyWeb.get urls, (err, data)->
-        if err then return handleError err
-        if urls.length == 1 then data = [data]
-        results = []
-        for result in data
-          results.push createModel(type, result).serialize()
+        @adapter.getPlaylists (playlists)->
+          writePlaylist _.findWhere(playlists, id: +req.params.id)
+
+    @app.get '/api/tracks/starred', (req, res)=>
+      @starred 'tracks', (tracks)-> writeJSON tracks, res
+
+    @app.get '/api/albums/starred', (req, res)=>
+      @starred 'albums', (albums)-> writeJSON albums, res
+
+    @app.get '/api/artists/starred', (req, res)=>
+      @starred 'artists', (artists)-> writeJSON artists, res
+
+    @app.get '/api/:type/:id', (req, res)=>
+      @getById req.params.type, req.params.id, req, res
+
+    # Examples:
+    # ```
+    # /api/artists?starred
+    # /api/albums?starred
+    # /api/tracks?starred
+    # /api/artists?godspeed you black emperor
+    # /api/artists?id=4Z8W4fKeB5YxbusRsdQVPb
+    # /api/artists?id=4Z8W4fKeB5YxbusRsdQVPb,0k17h0D3J5VfsdmQ1iZtE9
+    # ```
+    @app.get '/api/:type', (req, res)=>
+      type = req.params.type
+      if req.query.starred?
+        @starred type, (results)->
+          delete req.query.starred
+          if !_.isEmpty req.query
+            results = _.filter results, req.query
+          writeJSON results, res
+      else if req.query.id
+        @getById req.params.type, req.query.id, req, res
+      else
+        # @todo
+        query = if typeof req.query == 'string' then req.query else req.query.query
+        if query
+          search = @adapter.search query, req.query.offset, req.query.limit
+          type = type
+          method = "get#{type.substring(0,1).toUpperCase()}#{type.substring(1)}"
+          results = search[method]()
+        else
+          return res.writeHead 400, 'Invalid request: either ?starred, ?id or ?query must be specified'
+
+  starred: (type, cb)->
+    @adapter.getStarred (playlist)->
+      tracks = playlist.tracks
+      switch type
+        when 'albums'
+          data = _.sortBy(albumsForTracks(tracks), 'stars').reverse()
+          cb data
+        when 'artists'
+          data = _.sortBy(artistsForTracks(tracks), 'stars').reverse()
+          cb data
+        when 'tracks'
+          cb createModels 'track', tracks
+        else
+          throw "Unknown type #{type}"
+
+  getById: (type, id, req, res)->
+    type = inflect type
+    ids = if id.indexOf(',') != -1 then id.split(',') else ids = [id]
+    urls = []
+    for id in ids
+      urls.push spotifyUri.formatURI type: type, id: id
+    @adapter.get urls, (data)->
+      if urls.length == 1
+        writeJSON createModel(type, data[0]), res
+      else
+        results = (createModel type, result for result in data)
         writeJSON results, res
-      return
-    else
-      query = if typeof req.query == 'string' then req.query else req.query.query
-      if query
-        search = new nodeSpotify.Search query, req.query.offset, req.query.limit
-        type = type
-        method = "get#{type.substring(0,1).toUpperCase()}#{type.substring(1)}"
-        results = search[method]()
-      else
-        return res.writeHead 400, 'Invalid request: either ?starred, ?id or ?query must be specified'
-    
-    writeJSON results, res
+
+inflect = (type)->
+  type.substring 0, type.length - 1
 
 createModel = (type, record)->
   switch type
@@ -94,6 +110,11 @@ createModel = (type, record)->
       new Album record
     when 'artist'
       new Artist record
+    when 'playlist'
+      new Playlist record
+    when 'track'
+      new Track record
+
 createModels = (type, records)->
   (createModel type, record for record in records)
 
@@ -101,7 +122,7 @@ albumsForTracks = (tracks)->
   albums = {}
   for track in tracks
     if !albums[track.album.link]
-      albums[track.album.link] = track.album
+      albums[track.album.link] = new Album track.album
       albums[track.album.link].stars = 1
     else
       albums[track.album.link].stars++
@@ -118,36 +139,16 @@ artistsForTracks = (tracks)->
         artists[artist.link].stars++
   artists
 
-starred = (type)->
-  playlist = getStarred()
-  tracks = playlist.getTracks()
-  switch type
-    when 'albums'
-      data = _.sortBy(albumsForTracks(tracks), 'stars').reverse()
-      return createModels type, data
-    when 'artists'
-      console.log artistsForTracks(tracks)
-      data = _.sortBy(artistsForTracks(tracks), 'stars').reverse()
-      return createModels type, data
-    when 'tracks'
-      data = playlist.getTracks()
-      return createModels type, data
-    else
-      throw "Unknown type #{type}"
-
-writeJSON = (data, res)->
+writeJSON = (models, res)->
   res.header 'Content-Type', 'text/json'
-  res.end JSON.stringify data
+  payload = if models.length then (model.serialize() for model in models) else models.serialize()
+  res.end JSON.stringify payload
 
 notFound = (res, message = "Not found")->
   res.writeHead 404
   res.end message
 
-getStarred = ->
-  nodeSpotify.getStarred()
-
 handleError = ->
   console.error.apply console, arguments
 
-module.exports = 
-  init: init
+module.exports = new Api

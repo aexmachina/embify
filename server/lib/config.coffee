@@ -3,3 +3,4 @@ module.exports =
     username: 'simonvwade'
     password: 'joli.nil'
   httpPort: 8082
+  dnodePort: 8083

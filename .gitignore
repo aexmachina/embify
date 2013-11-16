@@ -1,3 +1,5 @@
-server/tmp
-server/node_modules/
-tmp
+/server/cache/
+/server/settings/
+/server/node_modules/
+/tmp/
+/spotify_appkey.key
