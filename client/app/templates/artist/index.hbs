@@ -1,3 +1,4 @@
 {{#collection contentBinding="content"}}
   {{#link-to "view" view.content}}{{view.content.name}}{{/link-to}}
 {{/collection}}
+<button class="btn load-more" type="button" {{action loadMore target="controller"}}>Load more</button>

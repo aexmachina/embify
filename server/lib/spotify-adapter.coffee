@@ -5,7 +5,7 @@ EventEmitter = require('events').EventEmitter
 _ = require 'lodash'
 
 nodeSpotify = require('../node_modules/node-spotify/build/Debug/spotify')
-  appkeyFile: require('path').resolve __dirname, '../spotify_appkey.key'
+  appkeyFile: require('path').resolve __dirname, '../../spotify_appkey.key'
 
 class SpotifyAdapter extends EventEmitter
 

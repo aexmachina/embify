@@ -10,8 +10,6 @@ app.use express.methodOverride()
 app.use express.session secret: 'adsf0ijc2poijas'
 # app.use cors()
 
-r = require('./routes')
-console.log r
-r.init(app)
+require('./routes').init app
 
 module.exports = app

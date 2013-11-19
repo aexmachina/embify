@@ -55,10 +55,13 @@ class Api
     @app.get '/api/:type', (req, res)=>
       type = req.params.type
       if req.query.starred?
-        @starred type, (results)->
-          delete req.query.starred
-          if !_.isEmpty req.query
-            results = _.filter results, req.query
+        @starred type, (results)=>
+          # delete req.query.starred
+          results = @handlePagination results, req.query
+          # delete req.query.pageSize if req.query.pageSize
+          # if !_.isEmpty req.query
+          #   results = _.filter results, (result)->
+          #     result.matches req.query
           writeJSON results, res
       else if req.query.id
         @getById req.params.type, req.query.id, req, res
@@ -100,6 +103,16 @@ class Api
       else
         results = (createModel type, result for result in data)
         writeJSON results, res
+
+  pageSize: 50
+
+  handlePagination: (results, query)->
+    pageSize = query.pageSize || @pageSize
+    if pageSize
+      start = +if query.page then query.page * pageSize else 0
+      end = start + (+pageSize)
+      results = results.slice start, end
+    results
 
 inflect = (type)->
   type.substring 0, type.length - 1

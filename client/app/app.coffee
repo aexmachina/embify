@@ -1,5 +1,5 @@
 `import Resolver from 'resolver'`
-`import registerComponents from 'appkit/utils/register_components'`
+# `import registerComponents from 'appkit/utils/register_components'`
 
 App = Ember.Application.extend
   LOG_ACTIVE_GENERATION: true
@@ -12,9 +12,9 @@ App = Ember.Application.extend
   ready: ->
     @debug.globalize() #debug
 
-App.initializer
-  name: 'Register Components',
-  initialize: (container, application)->
-    registerComponents container
+# App.initializer
+#   name: 'Register Components',
+#   initialize: (container, application)->
+#     registerComponents container
 
 `export default App`

@@ -6,7 +6,7 @@ module.exports = {
       'app/**/*',
       'public/**/*',
       'vendor/**/*',
-      '!vendor/ember-data/**',
+      '!vendor/ember-data/tmp/**',
       'tests/**/*'
     ],
     tasks: ['build:debug']
