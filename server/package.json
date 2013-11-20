@@ -16,6 +16,6 @@
     "spotify-uri": "~0.1.1",
     "dnode": "~1.1.0",
     "q": "~0.9.7",
-    "dnode-object": "master"
+    "dnode-object": "latest"
   }
 }

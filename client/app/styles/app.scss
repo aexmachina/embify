@@ -1,0 +1,21 @@
+html, body {
+  margin: 20px;
+}
+.results {
+  height: 400px;
+  overflow: auto;
+}
+.controls {
+  margin: 20px 0;
+  float: left;
+  width: 100%;
+}
+.load-more {
+  float: right;
+}
+.pager {
+  float: left;
+  input {
+    width: 4em;
+  }
+}
