@@ -9,6 +9,7 @@ Router.map ->
   @resource 'album', ->
     @resource 'view', path: '/:id', ->
       @route 'tracks'
-  @route 'track', path: '/track/:id'
+  @resource 'track', ->
+    @route 'view', path: '/:id'
 
 `export default Router`

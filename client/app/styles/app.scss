@@ -5,16 +5,16 @@ html, body {
   height: 400px;
   overflow: auto;
 }
-.controls {
+.paging-controls {
   margin: 20px 0;
   float: left;
   width: 100%;
 }
 .load-more {
-  float: right;
+  float: left;
 }
 .pager {
-  float: left;
+  float: right;
   input {
     width: 4em;
   }

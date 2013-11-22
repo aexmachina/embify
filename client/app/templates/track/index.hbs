@@ -1,0 +1,7 @@
+<div class="paging-controls">
+  Showing {{pager.start}}-{{pager.end}} of {{pager.total}} results
+  <div class="pager">Go to page {{input type="number" value=currentPage}}</div>
+</div>
+{{#collection contentBinding="content"}}
+  {{#link-to "view" view.content}}{{view.content.name}}{{/link-to}}
+{{/collection}}

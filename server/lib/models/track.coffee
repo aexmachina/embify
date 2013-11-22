@@ -3,18 +3,25 @@ util = require '../util'
 
 class Track
   constructor: (@data)->
-  serialize: (include = {})->
+  serialize: (detail = true)->
+    url = @data.link || util.id2uri 'track', @data.id # spotify-web
     obj =
-      id: util.id2uri 'track', @data.id
+      id: url
       name: @data.name
       duration: @data.duration
       popularity: @data.popularity
-    if include.artist
+      starred: @data.starred
+    if detail
       obj.artists = []
-      @data.artist.forEach (artist)->
-        obj.artists.push util.id2uri 'artist', artist.gid
-    if include.disc
-      obj.track = @data.number
-      obj.disc = @data.disc_number
+      @data.artists.forEach (artist)->
+        obj.artists.push
+          id: artist.link || util.id2uri 'artist', artist.gid # spotify-web
+          name: artist.name
+      if @data.disc_number # spotify-web
+        obj.track = @data.number
+        obj.disc = @data.disc_number
+      else
+        obj.album = @data.album
+      obj
 
 module.exports = Track

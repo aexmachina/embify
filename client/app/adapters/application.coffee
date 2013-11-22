@@ -1,5 +1,5 @@
 ApplicationAdapter = DS.RESTAdapter.extend
-  pageSize: 10
+  pageSize: 20
   namespace: 'api'
   defaultSerializer: '_default' # use the JSONSerializer
 

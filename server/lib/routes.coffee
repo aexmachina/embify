@@ -5,8 +5,12 @@ spotifyUri = require 'spotify-uri'
 config = require './config'
 Album = require './models/album'
 Artist = require './models/artist'
+Track = require './models/track'
 
 class Api
+
+  pageSize: 50
+
   init: (@app)->
 
     client = require('./dnode/client')
@@ -17,7 +21,7 @@ class Api
   defineRoutes: ->
     @app.get '/api/playlists', (req, res)=>
       @adapter.getPlaylists (playlists)->
-        writeJSON createModels('playlist', playlists), res
+        @writeArray createModels('playlist', playlists), req, res
 
     @app.get '/api/playlists/:id', (req, res)=>
       writePlaylist = (playlist)->
@@ -31,14 +35,14 @@ class Api
         @adapter.getPlaylists (playlists)->
           writePlaylist _.findWhere(playlists, id: +req.params.id)
 
-    @app.get '/api/tracks/starred', (req, res)=>
-      @starred 'tracks', (tracks)-> writeJSON tracks, res
+    # @app.get '/api/tracks/starred', (req, res)=>
+    #   @starred 'tracks', (tracks)-> @writeArray tracks, req, res
 
-    @app.get '/api/albums/starred', (req, res)=>
-      @starred 'albums', (albums)-> writeJSON albums, res
+    # @app.get '/api/albums/starred', (req, res)=>
+    #   @starred 'albums', (albums)-> @writeArray albums, req, res
 
-    @app.get '/api/artists/starred', (req, res)=>
-      @starred 'artists', (artists)-> writeJSON artists, res
+    # @app.get '/api/artists/starred', (req, res)=>
+    #   @starred 'artists', (artists)-> @writeArray artists, req, res
 
     @app.get '/api/:type/:id', (req, res)=>
       @getById req.params.type, req.params.id, req, res
@@ -56,13 +60,14 @@ class Api
       type = req.params.type
       if req.query.starred?
         @starred type, (results)=>
-          # delete req.query.starred
-          results = @handlePagination results, req.query
-          # delete req.query.pageSize if req.query.pageSize
-          # if !_.isEmpty req.query
-          #   results = _.filter results, (result)->
-          #     result.matches req.query
-          writeJSON results, res
+          query = _.clone req.query
+          delete query.starred
+          delete query.page
+          delete query.pageSize
+          if !_.isEmpty query
+            results = _.filter results, (result)->
+              result.matches query
+          @writeArray results, req, res
       else if req.query.id
         @getById req.params.type, req.query.id, req, res
       else
@@ -102,17 +107,22 @@ class Api
         writeJSON createModel(type, data[0]), res
       else
         results = (createModel type, result for result in data)
-        writeJSON results, res
+        @writeArray results, req, res
 
-  pageSize: 50
-
-  handlePagination: (results, query)->
-    pageSize = query.pageSize || @pageSize
+  writeArray: (results, req, res, total = results.length)->
+    page = if req.query.page then +req.query.page else 1
+    pageSize = +req.query.pageSize || @pageSize
     if pageSize
-      start = +if query.page then query.page * pageSize else 0
-      end = start + (+pageSize)
+      start = (page - 1) * pageSize
+      end = start + pageSize
       results = results.slice start, end
-    results
+    payload =
+      meta:
+        page: page
+        pageSize: pageSize
+        total: total
+      data: (model.serialize() for model in results)
+    writeJSON payload, res
 
 inflect = (type)->
   type.substring 0, type.length - 1
@@ -152,9 +162,10 @@ artistsForTracks = (tracks)->
         artists[artist.link].stars++
   artists
 
-writeJSON = (models, res)->
+writeJSON = (payload, res)->
   res.header 'Content-Type', 'text/json'
-  payload = if models.length then (model.serialize() for model in models) else models.serialize()
+  if 'function' == typeof payload.serialize
+    payload = payload.serialize()
   res.end JSON.stringify payload
 
 notFound = (res, message = "Not found")->

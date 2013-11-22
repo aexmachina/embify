@@ -1,6 +1,3 @@
-ArtistIndexController = Em.ArrayController.extend
-  actions:
-    loadMore: ->
-      @get('content').loadMore()
+ArtistIndexController = Em.ArrayController.extend Em.Pager.ControllerMixin
 
 `export default ArtistIndexController`
